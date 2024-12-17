@@ -1,18 +1,140 @@
 ---
-title: "Homework_2"
-output: html_document
+title: "Homework2.rmd"
+author: "Fabian & Samuel"
+output:
+  pdf_document: default
+  html_document: default
 date: "2024-12-09"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, tidy.opts=list(width.cutoff=60)}
+### Packages and Data Setup
+
+# Load the necessary packages
+library(tidyverse)
+library(nycflights13)
+library(ggplot2)
+library(dplyr)
+library(ggridges)
+
 ```
 
-## R Markdown
+## Task 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r echo=FALSE}
+ewr_cold_days <- weather %>%
+filter(origin == "EWR") %>%
+  mutate(temp_c = (temp - 32) * 5 / 9,      # Convert temperature to Celsius
+         day = as.Date(time_hour)) %>%      # Extract the date
+  filter(temp_c < 10) %>%                   # Filter for temperatures below 10°C
+  group_by(month, day) %>%                  # Group by month and day
+  summarise(n = n(), .groups = "drop") %>%  # Summarize daily grouping
+  group_by(month) %>%                       # Group by month
+  summarise(cold_days = n_distinct(day))    # Count unique cold days
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Display the results
+print(ewr_cold_days)
+
+# Check if dep_time contains NA values
+flights %>%
+  filter(is.na(dep_time)) %>%
+  summarise(total_missing = n())
+
+# Analyze flights in January with missing dep_time and other missing variables
+missing_dep_time <- flights %>%
+  filter(month == 1, is.na(dep_time)) %>%     # Filter January flights with missing dep_time
+  summarise(
+    total_missing_dep_time = n(),            # Number of affected flights
+    across(everything(), ~ sum(is.na(.)))    # Count missing values for each column
+  )
+
+# Display the results
+print(missing_dep_time)
+```
+
+## Task 2
+
+```{r echo=FALSE}
+
+# Pipeline to analyze flights with missing 'dep_time' in January
+flights_missing_dep_time <- flights %>%
+  filter(month == 1, is.na(dep_time)) %>%
+  summarise(
+    total_missing_dep_time = n(),                # Number of flights without departure time
+    missing_sched_dep_time = sum(is.na(sched_dep_time)),  # Number of missing 'sched_dep_time' in these flights
+    missing_arr_time = sum(is.na(arr_time)),      # Number of missing 'arr_time' in these flights
+    missing_air_time = sum(is.na(air_time))       # Number of missing 'air_time' in these flights
+  )
+
+# Display the results
+print(flights_missing_dep_time)
+
+```
+
+## Task 3 - a
+
+```{r echo=FALSE}
+
+# Example for creating 'weather_selected'
+weather_selected <- weather %>%
+  select(month, temp) %>%  # Select only the variables 'month' and 'temp'
+  filter(!is.na(temp))     # Filter out all rows with missing 'temp' values
+
+# a) Distribution of temperatures grouped by months with month names on the y-axis
+ggplot(weather_selected, aes(x = temp)) +
+  geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
+  facet_wrap(~ factor(month, levels = 1:12, labels = month.name), scales = "free_y") +  # Use month.name for labels
+  labs(x = expression(paste("Temperature (", degree, "F)")), y = "Count", title = "Temperature Distribution by Month") +  # Use expression()
+  scale_x_continuous(breaks = seq(-20, 100, 10)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 12),
+        axis.text = element_text(size = 10))
+
+```
+
+## Task 3 - b
+
+```{r echo=FALSE}
+# b) Density plot using ggridges::geom_density_ridges()
+ggplot(weather_selected, aes(x = temp, y = factor(month))) +
+  geom_density_ridges(scale = 3, fill = "lightblue", color = "blue") +  # Create ridge plots with specified colors and scaling
+  labs(x = expression(paste("Temperature (", degree, "F)")), y = "Month", title = "Density Ridge Plot of Temperature by Month") +  # Add labels and title
+  scale_y_discrete(labels = month.name) +  # Use month.name to label the y-axis
+  theme_minimal()  # Apply a clean minimal theme
+
+```
+
+## Task 3 - c
+
+```{r echo=FALSE}
+# c) Aggregated monthly average temperature and standard deviation
+aggregated_data <- weather_selected %>%
+  group_by(month) %>%  # Group data by month
+  summarise(
+    mean_temp = mean(temp, na.rm = TRUE),  # Calculate the mean temperature for each month
+    sd_temp = sd(temp, na.rm = TRUE),      # Calculate the standard deviation of the temperature
+    n = n()                                # Count the number of observations per month
+  ) %>%
+  mutate(
+    upper_bound = mean_temp + 3 * (sd_temp / sqrt(n)),  # Calculate the upper bound for the 99% confidence interval
+    lower_bound = mean_temp - 3 * (sd_temp / sqrt(n))   # Calculate the lower bound for the 99% confidence interval
+  )
+
+# Plot for monthly average temperature with confidence intervals
+ggplot(aggregated_data, aes(x = month, y = mean_temp)) +
+  geom_line(color = "blue", size = 1) +  # Line plot for average temperature
+  geom_ribbon(aes(ymin = lower_bound, ymax = upper_bound), fill = "lightblue", alpha = 0.5) +  # Confidence interval ribbon
+  labs(
+    x = "Month", 
+    y = expression(paste("Average Temperature (", degree, "F)")), 
+    title = "Monthly Average Temperature with 99% Confidence Interval"
+  ) +
+  scale_x_continuous(breaks = 1:12, labels = month.name) +  # Label months with their names
+  theme_minimal() +  # Apply a clean minimal theme
+  theme(axis.text = element_text(size = 10))  # Customize axis text size
+
+```
 
 ```{r cars}
 summary(cars)
@@ -22,8 +144,12 @@ summary(cars)
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
+```{r pressure2, echo=FALSE}
 plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Note that the echo = FALSE parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### **Workload**
+
+### We sat down at the beginning and divided up the tasks. The first thing we did was set up a Git repository so that we could easily collaborate and continuously track each other’s progress. We organized the tasks so that Samuel took on tasks 1, 2 and 3, while Fabian handled tasks 4 and 5. This clear division helped us focus and avoid overlapping efforts. After completing our initial assignments, we held a short meeting to discuss the status and share updates on our progress. This check-in proved beneficial, as it highlighted some areas that needed further refinement. Although a few items were still incomplete, we felt that we were moving in the right direction and understood what remained to be done. To ensure the quality of each other’s work, we decided that Fabian would review and make corrections to Samuel's tasks, and vice versa. This mutual review process not only helped catch errors but also facilitated a better understanding of each other's approach. By the end of the session, we felt more confident about our progress and looked forward to wrapping up the remaining tasks.

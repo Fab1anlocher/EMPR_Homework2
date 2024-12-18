@@ -6,6 +6,56 @@ output:
   html_document: default
 date: "2024-12-09"
 ---
+# Load the necessary packages
+library(tidyverse)
+
+View(weather)
+
+
+## Task 1:
+ewr_cold_days <- weather %>%
+  filter(origin == "EWR") %>%
+  mutate(temp_c = (temp - 32) * 5 / 9,      # Temperatur in Celsius umrechnen
+         day = as.Date(time_hour)) %>%      # Datum extrahieren
+  filter(temp_c < 10) %>%                   # Filter für Temperaturen < 10°C
+  group_by(month, day) %>%                  # Gruppieren nach Monat und Tag
+  summarise(n = n(), .groups = "drop") %>%  # Tagesweise Gruppierung
+  group_by(month) %>%                       # Gruppieren nach Monat
+  summarise(cold_days = n_distinct(day))    # Einzigartige Tage zählen
+
+# Ergebnisse anzeigen
+print(ewr_cold_days)
+
+# Prüfen, ob dep_time NA enthält
+flights %>%
+  filter(is.na(dep_time)) %>%
+  summarise(total_missing = n())
+
+# Flüge im Januar mit fehlender dep_time und anderen fehlenden Variablen analysieren
+missing_dep_time <- flights %>%
+  filter(month == 1, is.na(dep_time)) %>%     # Filtere Januar-Flüge mit fehlender dep_time
+  summarise(
+    total_missing_dep_time = n(),            # Anzahl der betroffenen Flüge
+    across(everything(), ~ sum(is.na(.)))    # Anzahl der fehlenden Werte für jede Spalte
+  )
+
+# Ergebnisse anzeigen
+print(missing_dep_time)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r setup, include=FALSE, tidy.opts=list(width.cutoff=60)}
 ### Packages and Data Setup

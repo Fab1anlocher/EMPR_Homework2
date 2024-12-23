@@ -17,6 +17,8 @@ library(ggplot2)
 library(dplyr)
 library(ggridges)
 library(readxl)
+library(ggplot2)
+library(kableExtra)
 
 ```
 
@@ -137,24 +139,11 @@ ggplot(aggregated_data, aes(x = month, y = mean_temp)) +
 
 ```
 
-```{r cars}
-summary(cars)
-```
+## Task 4
 
-
-
-
-
-## Task 4 
 # Data Cleaning and Inspection for Homework
 
 ```{r echo=FALSE}
-# Load necessary libraries
-library(dplyr)
-library(readxl)
-library(lubridate)
-library(dplyr)
-library(stringr)
 
 # Import the dataset
 Data_HW2 <- read_excel("Data_HW2.xlsx", sheet = "A very small sample")
@@ -279,47 +268,139 @@ view(cleaned_data)
 
 ```
 
+## Task 5 - A
+
+```{r echo=FALSE}
+
+
+#The dataset is not tidy because:
+#
+#Variables are stored in column names: Each sample (1, 2, 3, 4) has its x and y values in separate columns like x1, y1, x2, etc. Instead, each sample should #be identified as a separate observation.
+#Data is not normalized: Instead of having one column for x, one for y, and another for the sample, the dataset has redundant columns for each sample.
+#Structure is inefficient: This wide format makes it harder to analyze the data as a whole since the relationships between x and y for all samples are split #across multiple columns.
+#Why tidying is important:
+#To analyze the data properly, we need to convert it into a tidy format where:
+
+#Each variable has its own column (x, y, sample).
+#Each observation is in its own row.
+
+
+library(tidyr)
+library(dplyr)
 
 
 
+# Transform the dataset into a tidy format
+tidy_anscombe <- anscombe %>%
+  pivot_longer(
+    cols = everything(), # Include all columns
+    names_to = c(".value", "sample"), # Split variable type and sample number
+    names_pattern = "([xy])([1-4])" # Extract variable ('x' or 'y') and sample ('1'-'4')
+  ) %>%
+  mutate(sample = as.integer(sample)) # Convert sample to numeric
 
+# Save the tidy dataset for future use
+saveRDS(tidy_anscombe, "tidy_anscombe.rds")
 
-
-
-    
-    
-    
-    
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure2, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the echo = FALSE parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Task 5 - B
+
+```{r echo=FALSE}
+
+
+
+# Load the tidy data
+tidy_anscombe <- readRDS("tidy_anscombe.rds")
+
+# Create the scatterplot
+ggplot(tidy_anscombe, aes(x = x, y = y, color = as.factor(sample), shape = as.factor(sample))) +
+  geom_point(size = 3) + # Scatterplot points
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black", linewidth = 0.8) + # Line of best fit
+  scale_shape_manual(values = c(12, 10, 9, 7)) + # Assign shapes for samples
+  labs(
+    title = "Scatterplot with Line of Best Fit",
+    x = "X Values",
+    y = "Y Values",
+    color = "Sample",
+    shape = "Sample"
+  ) +
+  theme_minimal() # Clean theme
+
+```
+
+# Task 5 - C
+
+```{r echo=FALSE}
+
+# Lade notwendige Pakete
+library(dplyr)
+
+# Lade das tidy Dataset
+tidy_anscombe <- readRDS("tidy_anscombe.rds") 
+
+# Berechne die Statistiken in einer einzigen Pipeline
+tidy_anscombe %>%
+  group_by(sample) %>% # Gruppiere nach Sample
+  summarize(
+    mean_x = mean(x, na.rm = TRUE), # Mittelwert von x
+    mean_y = mean(y, na.rm = TRUE), # Mittelwert von y
+    sd_x = sd(x, na.rm = TRUE), # Standardabweichung von x
+    sd_y = sd(y, na.rm = TRUE), # Standardabweichung von y
+    corr_xy = cor(x, y, use = "complete.obs") # Korrelation zwischen x und y
+  ) %>%
+  kable( # Formatiere die Tabelle
+    col.names = c("Sample", "Mean X", "Mean Y", "SD X", "SD Y", "Correlation XY"),
+    digits = 3, # Zeige 3 Nachkommastellen
+    align = "c"
+  ) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+```
+    
+    
+```{r echo=FALSE}    
+library(dplyr)
+
+# Load the tidy dataset
+tidy_anscombe <- readRDS("tidy_anscombe.rds") 
+
+# Calculate the statistics in a single pipeline
+tidy_anscombe %>%
+  group_by(sample) %>% # Group data by the 'sample' variable
+  summarize(
+    mean_x = mean(x, na.rm = TRUE), # Calculate the mean of x
+    mean_y = mean(y, na.rm = TRUE), # Calculate the mean of y
+    sd_x = sd(x, na.rm = TRUE), # Calculate the standard deviation of x
+    sd_y = sd(y, na.rm = TRUE), # Calculate the standard deviation of y
+    corr_xy = cor(x, y, use = "complete.obs") # Calculate the correlation between x and y
+  ) %>%
+  kable( # Create a formatted table
+    col.names = c("Sample", "Mean X", "Mean Y", "SD X", "SD Y", "Correlation XY"), # Set column names
+    digits = 3, # Show 3 decimal places
+    align = "c" # Center-align the table columns
+  ) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover")) # Add styling to the table
+    
+ ```   
+  
+```{r echo=FALSE}
+# Load the tidy dataset
+readRDS("tidy_anscombe.rds") %>%
+  ggplot(aes(x = x, y = y)) +
+  geom_point(size = 3, color = "blue") + # Add scatterplot points
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "red") + # Add lines of best fit
+  facet_grid(~ sample) + # Create one plot per sample
+  labs(
+    title = "Scatterplots of Anscombe's Data with Lines of Best Fit",
+    subtitle = "Each sample shows a different pattern despite having similar summary statistics",
+    x = "X Values",
+    y = "Y Values"
+  ) +
+  theme_minimal() # Use a clean theme for better visualization
+
+```
+
+
 
 ### **Workload**
 

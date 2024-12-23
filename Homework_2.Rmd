@@ -16,6 +16,7 @@ library(nycflights13)
 library(ggplot2)
 library(dplyr)
 library(ggridges)
+library(readxl)
 
 ```
 
@@ -139,6 +140,176 @@ ggplot(aggregated_data, aes(x = month, y = mean_temp)) +
 ```{r cars}
 summary(cars)
 ```
+
+
+
+
+
+## Task 4 
+# Data Cleaning and Inspection for Homework
+
+```{r echo=FALSE}
+# Load necessary libraries
+library(dplyr)
+library(readxl)
+library(lubridate)
+library(dplyr)
+library(stringr)
+
+# Import the dataset
+Data_HW2 <- read_excel("Data_HW2.xlsx", sheet = "A very small sample")
+
+# date of birth
+
+# Problem:
+# The 'date of birth' column contains dates in different formats.
+# Some are in "YYYY-MM-DD" format, while others use "DD.MM.YYYY".
+# This inconsistency needs to be addressed to ensure uniformity in the dataset.
+
+# Solution:
+# Convert all date formats to a standard "YYYY-MM-DD" format using lubridate.
+
+Data_HW2_cleaned <- Data_HW2 %>%
+  mutate(
+    `date of birth` = case_when(
+      grepl("^\\d{2}\\.\\d{2}\\.\\d{4}$", `date of birth`) ~ dmy(`date of birth`), # Handle DD.MM.YYYY
+      grepl("^\\d{4}-\\d{2}-\\d{2}$", `date of birth`) ~ ymd(`date of birth`), # Handle YYYY-MM-DD
+      grepl("^\\d+$", `date of birth`) ~ as.Date(as.numeric(`date of birth`), origin = "1899-12-30"), # Convert Excel date
+      TRUE ~ NA_Date_ # All other cases to NA
+    )
+  )
+
+# Height
+
+# Problem:
+# The 'height' column has inconsistent units. Some values are in 'cm', while others are in 'm' (e.g., '1,82m').
+# This inconsistency makes it difficult to analyze the data.
+
+# Solution:
+# Convert all heights to centimeters. For values in meters ('m'), multiply by 100 after converting them to numeric.
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    height = case_when(
+      grepl("cm$", height) ~ as.numeric(sub("cm", "", height)), # Remove 'cm' and convert to numeric
+      grepl("m$", height) ~ as.numeric(sub(",", ".", sub("m", "", height))) * 100, # Convert 'm' to numeric and multiply by 100
+      TRUE ~ NA_real_ # Mark invalid or missing values as NA
+    )
+  )
+
+# Feet
+
+# Problem:
+# The 'foot' column contains unusually large values, likely due to a mix-up with shoe sizes.
+# Foot lengths above 40 cm are unrealistic and should be treated as invalid.
+
+# Solution:
+# Use mutate() to replace values greater than 40 with NA, indicating invalid entries.
+
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    foot = ifelse(foot > 40, NA_real_, foot) # Replace values > 40 with NA
+  )
+
+# Hair
+
+# Problem:
+# The 'hair' column contains the value "Glatze"
+# This is inconsistent with numerical hair lengths. It should be replaced with 0.
+
+# Solution:
+# Use mutate() to replace "Glatze" with 0 and ensure all values are numeric.
+
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    hair = ifelse(hair == "Glatze", 0, as.numeric(hair)) # Replace "Glatze" with 0 and convert to numeric
+  )
+
+# Check the cleaned 'hair' column
+view(Data_HW2_cleaned$hair)
+
+
+#  eye colour
+
+# Problem Description:
+# The 'eye colour' column contains inconsistent values due to:
+# - Mixed languages (German and English)
+# - Inconsistent capitalization
+# - Multiple colors separated by spaces or slashes
+
+# Solution:
+# Use mutate() to standardize all values to lowercase English and unify multiple colors with a hyphen.
+
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    `eye colour` = str_to_lower(`eye colour`), # Convert to lowercase
+    `eye colour` = str_replace_all(`eye colour`, "blau", "blue"), # Translate to English
+    `eye colour` = str_replace_all(`eye colour`, "grau", "grey"),
+    `eye colour` = str_replace_all(`eye colour`, "grün", "green"),
+    `eye colour` = str_replace_all(`eye colour`, "braun", "brown"),
+    `eye colour` = str_replace_all(`eye colour`, "schwarz", "black"),
+    `eye colour` = str_replace_all(`eye colour`, "/", "-"), # Replace slashes with hyphen
+    `eye colour` = str_squish(`eye colour`), # Remove extra spaces
+    `eye colour` = str_replace_all(`eye colour`, "\\s+", "-"), # Replace spaces with hyphen
+    `eye colour` = str_replace_all(`eye colour`, "-{2,}", "-") # Replace multiple hyphens with a single hyphen
+  )
+
+# Cash
+# Problem:
+# The 'cash (CHF)' column has missing values (interpreted as 0) and unrealistically high values like 4000.
+# These high values likely refer to salary and should be removed or capped.
+
+# Solution:
+# - Replace missing values with 0.
+# - Cap all values greater than 400 to 400 (reasonable maximum for cash on hand).
+
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    `cash (CHF)` = ifelse(is.na(`cash (CHF)`), 0, `cash (CHF)`), # Replace missing values with 0
+    `cash (CHF)` = ifelse(`cash (CHF)` > 400, 400, `cash (CHF)`) # Cap values above 400
+  )
+
+
+# Save cleaned data
+saveRDS(Data_HW2_cleaned, file = "cleaned_data.rds")
+
+# Verify cleaned data
+cleaned_data <- readRDS("cleaned_data.rds")
+view(cleaned_data)
+
+
+```
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Including Plots
 

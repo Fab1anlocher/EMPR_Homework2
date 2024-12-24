@@ -25,6 +25,10 @@ library(kableExtra)
 ## Task 1
 
 ```{r echo=FALSE}
+
+## -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 3 (filter() & group_by()) and 20 (group_by())
+## -> EMPR_08a_EDA_AS2024.pdf / page 2: Highlights the importance of data cleaning and inspection, relevant for addressing hourly duplicates in the dataset. / page 14: Discusses handling outliers and irregular data, which applies to ensuring accurate daily counts.
+
 ewr_cold_days <- weather %>%
 filter(origin == "EWR") %>%
   mutate(temp_c = (temp - 32) * 5 / 9,      # Convert temperature to Celsius
@@ -55,93 +59,123 @@ missing_dep_time <- flights %>%
 print(missing_dep_time)
 ```
 
+### Explanation
+
+The issue of counting more than 31 days in a month arises because the dataset contains one entry per hour, resulting in 24 rows for each day. To address this, we grouped the data by date to ensure that each day is counted only once. The revised approach calculates the minimum temperature for each day and then filters days where this minimum is below 10°C. This ensures an accurate count of cold days per month.
+
+Yes, the months with the most cold days (January, February, and December) align with expectations, as these are winter months in the Northern Hemisphere. However, it is interesting to note some colder days in spring (April) and fall (November), which could be attributed to occasional cold fronts. Unexpectedly cold days in September might require further investigation for anomalies in the data.
+
+Despite these adjustments, the results still show inconsistencies, such as months with more than 31 cold days. These discrepancies may arise from duplicates or irregularities in the weather dataset, such as multiple recordings for the same hour or incomplete data cleaning. Without deeper investigation or cleaning of the dataset, it is impossible to guarantee correct results.
+
+Final Note: The current count of cold days per month should be interpreted with caution. Additional clarification from the data provider or further exploration of the dataset might be necessary to resolve these issues.
+
 ## Task 2
 
 ```{r echo=FALSE}
 
-# Pipeline to analyze flights with missing 'dep_time' in January
-flights_missing_dep_time <- flights %>%
-  filter(month == 1, is.na(dep_time)) %>%
-  summarise(
-    total_missing_dep_time = n(),                # Number of flights without departure time
-    missing_sched_dep_time = sum(is.na(sched_dep_time)),  # Number of missing 'sched_dep_time' in these flights
-    missing_arr_time = sum(is.na(arr_time)),      # Number of missing 'arr_time' in these flights
-    missing_air_time = sum(is.na(air_time))       # Number of missing 'air_time' in these flights
-  )
+## -> -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 3 (filter()) and 17 (across())
+## -> EMPR_08a_EDA_AS2024.pdf / page 13: Recommends testing results with and without rows with missing or unusual values. / page 14: Describes handling missing data and understanding how such rows differ from recorded values.
 
-# Display the results
-print(flights_missing_dep_time)
+# Analyze flights with missing 'dep_time'
+missing_dep_time <- flights %>%
+  filter(is.na(dep_time)) %>%                       # Filter for rows with missing departure time
+  summarise(
+    across(everything(), ~ sum(is.na(.)),           # Count missing values across all variables
+           .names = "missing_{.col}")               # Name the output columns
+  ) %>%
+  pivot_longer(everything(),                        # Reshape data for readability
+               names_to = "variable", 
+               values_to = "missing_count")
+
+print(missing_dep_time)
 
 ```
+
+### Explanation
+
+Rows with missing dep_time likely represent flights that were canceled. These rows have missing values for other related columns, such as arr_time, air_time, and sched_dep_time, because a canceled flight does not have actual departure or arrival times recorded. Additionally, the absence of sched_dep_time might indicate flights removed from the schedule altogether due to external factors such as weather conditions, operational issues, or low demand.
 
 ## Task 3 - a
 
 ```{r echo=FALSE}
 
-# Example for creating 'weather_selected'
-weather_selected <- weather %>%
-  select(month, temp) %>%  # Select only the variables 'month' and 'temp'
-  filter(!is.na(temp))     # Filter out all rows with missing 'temp' values
+## -> -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 3 (filter()), 10 (select()) and 21 (ggplot())
+## -> EMPR_08a_EDA_AS2024.pdf / page 3: Explains analyzing and visualizing distributions using histograms to detect variation within a variable. / page 9: Discusses refining histograms using appropriate bin widths for clarity.
 
-# a) Distribution of temperatures grouped by months with month names on the y-axis
+weather_selected <- weather %>%
+  select(month, temp) %>%        # Select only 'month' and 'temp' columns
+  filter(!is.na(temp))           # Filter out rows where temperature is missing
+
+# Plot the temperature distribution grouped by month
 ggplot(weather_selected, aes(x = temp)) +
-  geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
-  facet_wrap(~ factor(month, levels = 1:12, labels = month.name), scales = "free_y") +  # Use month.name for labels
-  labs(x = expression(paste("Temperature (", degree, "F)")), y = "Count", title = "Temperature Distribution by Month") +  # Use expression()
-  scale_x_continuous(breaks = seq(-20, 100, 10)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_minimal() +
-  theme(strip.text = element_text(size = 12),
-        axis.text = element_text(size = 10))
+  geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +  # Histogram with specified aesthetics
+  facet_wrap(~ factor(month, levels = 1:12, labels = month.name)) + # Facet by month with names
+  labs(
+    x = expression(paste("Temperature (", degree, "F)")),           # X-axis label
+    y = "Count",                                                   # Y-axis label
+    title = "Temperature Distribution by Month"                   # Title
+  ) +
+  theme_minimal()                                                  # Apply a clean theme
+
 
 ```
 
 ## Task 3 - b
 
 ```{r echo=FALSE}
-# b) Density plot using ggridges::geom_density_ridges()
-ggplot(weather_selected, aes(x = temp, y = factor(month))) +
-  geom_density_ridges(scale = 3, fill = "lightblue", color = "blue") +  # Create ridge plots with specified colors and scaling
-  labs(x = expression(paste("Temperature (", degree, "F)")), y = "Month", title = "Density Ridge Plot of Temperature by Month") +  # Add labels and title
-  scale_y_discrete(labels = month.name) +  # Use month.name to label the y-axis
-  theme_minimal()  # Apply a clean minimal theme
+
+## -> -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 3 (filter()) and 21 (ggplot()) / The specific use of geom_density_ridges() is not covered in the slides but was inspired by similar visualization examples.
+## -> EMPR_08a_EDA_AS2024.pdf / page 3: General introduction to analyzing distributions. / page 15: Demonstrates the use of geom_density_ridges() to visualize numerical data distributions across categorical variables.
+
+ggplot(weather_selected, aes(x = temp, y = factor(month, labels = month.name))) +
+  geom_density_ridges(fill = "lightblue", color = "blue") +  # Ridge plot aesthetics
+  labs(
+    x = expression(paste("Temperature (", degree, "F)")),    # X-axis label
+    y = "Month",                                             # Y-axis label
+    title = "Temperature Distribution by Month"             # Title
+  ) +
+  theme_minimal()                                            # Clean theme for better readability
 
 ```
 
 ## Task 3 - c
 
 ```{r echo=FALSE}
-# c) Aggregated monthly average temperature and standard deviation
+
+## -> -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 20 (group_by() and summarise()) and 21 (Visualization of aggregated data) / The confidence intervals are based on the application of mutate(), also covered in Slide 20
+## -> EMPR_08a_EDA_AS2024.pdf / page 16: Describes grouped comparisons using visualizations, relevant for presenting monthly averages. / page 20: Discusses showing group differences, which applies to monthly temperature trends.
+
 aggregated_data <- weather_selected %>%
-  group_by(month) %>%  # Group data by month
+  group_by(month) %>%                               # Group by month
   summarise(
-    mean_temp = mean(temp, na.rm = TRUE),  # Calculate the mean temperature for each month
-    sd_temp = sd(temp, na.rm = TRUE),      # Calculate the standard deviation of the temperature
-    n = n()                                # Count the number of observations per month
+    mean_temp = mean(temp, na.rm = TRUE),           # Calculate mean temperature
+    sd_temp = sd(temp, na.rm = TRUE),               # Calculate standard deviation
+    n = n()                                         # Count observations
   ) %>%
   mutate(
-    upper_bound = mean_temp + 3 * (sd_temp / sqrt(n)),  # Calculate the upper bound for the 99% confidence interval
-    lower_bound = mean_temp - 3 * (sd_temp / sqrt(n))   # Calculate the lower bound for the 99% confidence interval
+    upper_bound = mean_temp + 3 * (sd_temp / sqrt(n)),  # Upper confidence limit
+    lower_bound = mean_temp - 3 * (sd_temp / sqrt(n))   # Lower confidence limit
   )
 
-# Plot for monthly average temperature with confidence intervals
 ggplot(aggregated_data, aes(x = month, y = mean_temp)) +
-  geom_line(color = "blue", size = 1) +  # Line plot for average temperature
-  geom_ribbon(aes(ymin = lower_bound, ymax = upper_bound), fill = "lightblue", alpha = 0.5) +  # Confidence interval ribbon
+  geom_line(color = "blue") +                       # Plot the mean temperature
+  geom_ribbon(aes(ymin = lower_bound, ymax = upper_bound), 
+              fill = "lightblue", alpha = 0.5) +    # Confidence interval shading
   labs(
-    x = "Month", 
+    x = "Month (Number)",                           # X-axis labeled with numbers
     y = expression(paste("Average Temperature (", degree, "F)")), 
     title = "Monthly Average Temperature with 99% Confidence Interval"
   ) +
-  scale_x_continuous(breaks = 1:12, labels = month.name) +  # Label months with their names
-  theme_minimal() +  # Apply a clean minimal theme
-  theme(axis.text = element_text(size = 10))  # Customize axis text size
+  scale_x_continuous(breaks = 1:12) +               # Ensure months are labeled as numbers
+  theme_minimal()                                   # Clean theme
+
+
 
 ```
 
 ## Task 4
 
-# Data Cleaning and Inspection for Homework
+### Data Cleaning and Inspection for Homework
 
 ```{r echo=FALSE}
 
@@ -304,7 +338,7 @@ saveRDS(tidy_anscombe, "tidy_anscombe.rds")
 
 ```
 
-# Task 5 - B
+## Task 5 - B
 
 ```{r echo=FALSE}
 
@@ -329,7 +363,7 @@ ggplot(tidy_anscombe, aes(x = x, y = y, color = as.factor(sample), shape = as.fa
 
 ```
 
-# Task 5 - C
+## Task 5 - C
 
 ```{r echo=FALSE}
 
@@ -356,9 +390,8 @@ tidy_anscombe %>%
   ) %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
 ```
-    
-    
-```{r echo=FALSE}    
+
+```{r echo=FALSE}
 library(dplyr)
 
 # Load the tidy dataset
@@ -381,8 +414,8 @@ tidy_anscombe %>%
   ) %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover")) # Add styling to the table
     
- ```   
-  
+```
+
 ```{r echo=FALSE}
 # Load the tidy dataset
 readRDS("tidy_anscombe.rds") %>%
@@ -400,8 +433,6 @@ readRDS("tidy_anscombe.rds") %>%
 
 ```
 
+## **Workload**
 
-
-### **Workload**
-
-### We sat down at the beginning and divided up the tasks. The first thing we did was set up a Git repository so that we could easily collaborate and continuously track each other’s progress. We organized the tasks so that Samuel took on tasks 1, 2 and 3, while Fabian handled tasks 4 and 5. This clear division helped us focus and avoid overlapping efforts. After completing our initial assignments, we held a short meeting to discuss the status and share updates on our progress. This check-in proved beneficial, as it highlighted some areas that needed further refinement. Although a few items were still incomplete, we felt that we were moving in the right direction and understood what remained to be done. To ensure the quality of each other’s work, we decided that Fabian would review and make corrections to Samuel's tasks, and vice versa. This mutual review process not only helped catch errors but also facilitated a better understanding of each other's approach. By the end of the session, we felt more confident about our progress and looked forward to wrapping up the remaining tasks.
+We sat down at the beginning and divided up the tasks. The first thing we did was set up a Git repository so that we could easily collaborate and continuously track each other’s progress. We organized the tasks so that Samuel took on tasks 1, 2 and 3, while Fabian handled tasks 4 and 5. This clear division helped us focus and avoid overlapping efforts. After completing our initial assignments, we held a short meeting to discuss the status and share updates on our progress. This check-in proved beneficial, as it highlighted some areas that needed further refinement. Although a few items were still incomplete, we felt that we were moving in the right direction and understood what remained to be done. To ensure the quality of each other’s work, we decided that Fabian would review and make corrections to Samuel's tasks, and vice versa. This mutual review process not only helped catch errors but also facilitated a better understanding of each other's approach. By the end of the session, we felt more confident about our progress and looked forward to wrapping up the remaining tasks.

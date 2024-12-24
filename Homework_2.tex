@@ -1,0 +1,294 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Homework2.rmd},
+  pdfauthor={Fabian \& Samuel},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Homework2.rmd}
+\author{Fabian \& Samuel}
+\date{2024-12-09}
+
+\begin{document}
+\maketitle
+
+\subsection{Task 1}\label{task-1}
+
+\begin{verbatim}
+## # A tibble: 9 x 2
+##   month cold_days
+##   <int>     <int>
+## 1     1        32
+## 2     2        29
+## 3     3        32
+## 4     4        22
+## 5     5        12
+## 6     9         3
+## 7    10        12
+## 8    11        28
+## 9    12        28
+\end{verbatim}
+
+\begin{verbatim}
+## # A tibble: 1 x 1
+##   total_missing
+##           <int>
+## 1          8255
+\end{verbatim}
+
+\begin{verbatim}
+## # A tibble: 1 x 20
+##   total_missing_dep_time  year month   day dep_time sched_dep_time dep_delay
+##                    <int> <int> <int> <int>    <int>          <int>     <int>
+## 1                      0     0     0     0      521              0       521
+## # i 13 more variables: arr_time <int>, sched_arr_time <int>, arr_delay <int>,
+## #   carrier <int>, flight <int>, tailnum <int>, origin <int>, dest <int>,
+## #   air_time <int>, distance <int>, hour <int>, minute <int>, time_hour <int>
+\end{verbatim}
+
+\subsubsection{Explanation}\label{explanation}
+
+The issue of counting more than 31 days in a month arises because the
+dataset contains one entry per hour, resulting in 24 rows for each day.
+To address this, we grouped the data by date to ensure that each day is
+counted only once. The revised approach calculates the minimum
+temperature for each day and then filters days where this minimum is
+below 10°C. This ensures an accurate count of cold days per month.
+
+Yes, the months with the most cold days (January, February, and
+December) align with expectations, as these are winter months in the
+Northern Hemisphere. However, it is interesting to note some colder days
+in spring (April) and fall (November), which could be attributed to
+occasional cold fronts. Unexpectedly cold days in September might
+require further investigation for anomalies in the data.
+
+Despite these adjustments, the results still show inconsistencies, such
+as months with more than 31 cold days. These discrepancies may arise
+from duplicates or irregularities in the weather dataset, such as
+multiple recordings for the same hour or incomplete data cleaning.
+Without deeper investigation or cleaning of the dataset, it is
+impossible to guarantee correct results.
+
+Final Note: The current count of cold days per month should be
+interpreted with caution. Additional clarification from the data
+provider or further exploration of the dataset might be necessary to
+resolve these issues.
+
+\subsection{Task 2}\label{task-2}
+
+\begin{verbatim}
+## # A tibble: 19 x 2
+##    variable               missing_count
+##    <chr>                          <int>
+##  1 missing_year                       0
+##  2 missing_month                      0
+##  3 missing_day                        0
+##  4 missing_dep_time                8255
+##  5 missing_sched_dep_time             0
+##  6 missing_dep_delay               8255
+##  7 missing_arr_time                8255
+##  8 missing_sched_arr_time             0
+##  9 missing_arr_delay               8255
+## 10 missing_carrier                    0
+## 11 missing_flight                     0
+## 12 missing_tailnum                 2512
+## 13 missing_origin                     0
+## 14 missing_dest                       0
+## 15 missing_air_time                8255
+## 16 missing_distance                   0
+## 17 missing_hour                       0
+## 18 missing_minute                     0
+## 19 missing_time_hour                  0
+\end{verbatim}
+
+\subsubsection{Explanation}\label{explanation-1}
+
+Rows with missing dep\_time likely represent flights that were canceled.
+These rows have missing values for other related columns, such as
+arr\_time, air\_time, and sched\_dep\_time, because a canceled flight
+does not have actual departure or arrival times recorded. Additionally,
+the absence of sched\_dep\_time might indicate flights removed from the
+schedule altogether due to external factors such as weather conditions,
+operational issues, or low demand.
+
+\subsection{Task 3 - a}\label{task-3---a}
+
+\includegraphics{Homework_2_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\subsection{Task 3 - b}\label{task-3---b}
+
+\begin{verbatim}
+## Picking joint bandwidth of 1.58
+\end{verbatim}
+
+\includegraphics{Homework_2_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\subsection{Task 3 - c}\label{task-3---c}
+
+\includegraphics{Homework_2_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\subsection{Task 4}\label{task-4}
+
+\subsubsection{Data Cleaning and Inspection for
+Homework}\label{data-cleaning-and-inspection-for-homework}
+
+\begin{verbatim}
+## Warning: There were 3 warnings in `mutate()`.
+## The first warning was:
+## i In argument: `date of birth = case_when(...)`.
+## Caused by warning:
+## ! All formats failed to parse. No formats found.
+## i Run ]8;;ide:run:dplyr::last_dplyr_warnings()dplyr::last_dplyr_warnings()]8;; to see the 2 remaining warnings.
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: There were 2 warnings in `mutate()`.
+## The first warning was:
+## i In argument: `height = case_when(...)`.
+## Caused by warning:
+## ! NAs durch Umwandlung erzeugt
+## i Run ]8;;ide:run:dplyr::last_dplyr_warnings()dplyr::last_dplyr_warnings()]8;; to see the 1 remaining warning.
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: There was 1 warning in `mutate()`.
+## i In argument: `hair = ifelse(hair == "Glatze", 0, as.numeric(hair))`.
+## Caused by warning in `ifelse()`:
+## ! NAs durch Umwandlung erzeugt
+\end{verbatim}
+
+\subsection{Task 5 - A}\label{task-5---a}
+
+\subsection{Task 5 - B}\label{task-5---b}
+
+\begin{verbatim}
+## `geom_smooth()` using formula = 'y ~ x'
+\end{verbatim}
+
+\includegraphics{Homework_2_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\subsection{Task 5 - C}\label{task-5---c}
+
+\begin{longtable}[t]{cccccc}
+\toprule
+Sample & Mean X & Mean Y & SD X & SD Y & Correlation XY\\
+\midrule
+1 & 9 & 7.501 & 3.317 & 2.032 & 0.816\\
+2 & 9 & 7.501 & 3.317 & 2.032 & 0.816\\
+3 & 9 & 7.500 & 3.317 & 2.030 & 0.816\\
+4 & 9 & 7.501 & 3.317 & 2.031 & 0.817\\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}[t]{cccccc}
+\toprule
+Sample & Mean X & Mean Y & SD X & SD Y & Correlation XY\\
+\midrule
+1 & 9 & 7.501 & 3.317 & 2.032 & 0.816\\
+2 & 9 & 7.501 & 3.317 & 2.032 & 0.816\\
+3 & 9 & 7.500 & 3.317 & 2.030 & 0.816\\
+4 & 9 & 7.501 & 3.317 & 2.031 & 0.817\\
+\bottomrule
+\end{longtable}
+
+\begin{verbatim}
+## `geom_smooth()` using formula = 'y ~ x'
+\end{verbatim}
+
+\includegraphics{Homework_2_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\subsection{\texorpdfstring{\textbf{Workload}}{Workload}}\label{workload}
+
+We sat down at the beginning and divided up the tasks. The first thing
+we did was set up a Git repository so that we could easily collaborate
+and continuously track each other's progress. We organized the tasks so
+that Samuel took on tasks 1, 2 and 3, while Fabian handled tasks 4 and
+5. This clear division helped us focus and avoid overlapping efforts.
+After completing our initial assignments, we held a short meeting to
+discuss the status and share updates on our progress. This check-in
+proved beneficial, as it highlighted some areas that needed further
+refinement. Although a few items were still incomplete, we felt that we
+were moving in the right direction and understood what remained to be
+done. To ensure the quality of each other's work, we decided that Fabian
+would review and make corrections to Samuel's tasks, and vice versa.
+This mutual review process not only helped catch errors but also
+facilitated a better understanding of each other's approach. By the end
+of the session, we felt more confident about our progress and looked
+forward to wrapping up the remaining tasks.
+
+\end{document}

@@ -1,10 +1,11 @@
 ---
 title: "Homework2.rmd"
-author: "Fabian & Samuel"
+author: "Fabian Locher & Samuel Hänni"
+date: "2024-12-09"
 output:
   pdf_document: default
   html_document: default
-date: "2024-12-09"
+  word_document: default
 ---
 
 ```{r setup, include=FALSE, tidy.opts=list(width.cutoff=60)}
@@ -14,7 +15,6 @@ date: "2024-12-09"
 library(tidyverse)
 library(nycflights13)
 library(ggplot2)
-library(dplyr)
 library(ggridges)
 library(readxl)
 library(ggplot2)
@@ -22,55 +22,46 @@ library(kableExtra)
 
 ```
 
-## Task 1
-
+# Task 1
 ```{r echo=FALSE}
 
-## -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 3 (filter() & group_by()) and 20 (group_by())
-## -> EMPR_08a_EDA_AS2024.pdf / page 2: Highlights the importance of data cleaning and inspection, relevant for addressing hourly duplicates in the dataset. / page 14: Discusses handling outliers and irregular data, which applies to ensuring accurate daily counts.
+## -> EMPR_05_Data_Transformation_I_AS2024.pdf / & aggregate())35 &  subset() 24
 
-ewr_cold_days <- weather %>%
-filter(origin == "EWR") %>%
-  mutate(temp_c = (temp - 32) * 5 / 9,      # Convert temperature to Celsius
-         day = as.Date(time_hour)) %>%      # Extract the date
-  filter(temp_c < 10) %>%                   # Filter for temperatures below 10°C
-  group_by(month, day) %>%                  # Group by month and day
-  summarise(n = n(), .groups = "drop") %>%  # Summarize daily grouping
-  group_by(month) %>%                       # Group by month
-  summarise(cold_days = n_distinct(day))    # Count unique cold days
 
-# Display the results
-print(ewr_cold_days)
+# Filter for Newark Airport
+ewr_weather <- subset(weather, origin == "EWR")
 
-# Check if dep_time contains NA values
-flights %>%
-  filter(is.na(dep_time)) %>%
-  summarise(total_missing = n())
+# Convert temperature to Celsius
+ewr_weather$temp_c <- (ewr_weather$temp - 32) * 5 / 9
 
-# Analyze flights in January with missing dep_time and other missing variables
-missing_dep_time <- flights %>%
-  filter(month == 1, is.na(dep_time)) %>%     # Filter January flights with missing dep_time
-  summarise(
-    total_missing_dep_time = n(),            # Number of affected flights
-    across(everything(), ~ sum(is.na(.)))    # Count missing values for each column
-  )
+# Extract the date (ignore time)
+ewr_weather$date <- as.Date(ewr_weather$time_hour)
+
+# Find the minimum temperature for each day
+daily_min_temp <- aggregate(temp_c ~ date, data = ewr_weather, FUN = min, na.rm = TRUE)
+
+# Filter for days with temperatures below 10°C
+cold_days <- subset(daily_min_temp, temp_c < 10)
+
+# Count the number of cold days per month
+cold_days$month <- format(cold_days$date, "%m")
+monthly_cold_days <- table(cold_days$month)
 
 # Display the results
-print(missing_dep_time)
+print(monthly_cold_days)
+
 ```
-
 ### Explanation
 
-The issue of counting more than 31 days in a month arises because the dataset contains one entry per hour, resulting in 24 rows for each day. To address this, we grouped the data by date to ensure that each day is counted only once. The revised approach calculates the minimum temperature for each day and then filters days where this minimum is below 10°C. This ensures an accurate count of cold days per month.
+Based on the results, the distribution of cold days per month aligns largely with my expectations. New York is known for its cold winters and warm summers, so the high number of cold days in winter months such as January (31 days), February (28 days), and December (28 days) seems reasonable. The data confirms that winter in New York is consistently cold, as expected.
 
-Yes, the months with the most cold days (January, February, and December) align with expectations, as these are winter months in the Northern Hemisphere. However, it is interesting to note some colder days in spring (April) and fall (November), which could be attributed to occasional cold fronts. Unexpectedly cold days in September might require further investigation for anomalies in the data.
+What did surprise me, however, was the number of cold days in March (31 days). I had expected temperatures to begin warming in early spring, but this suggests that New York can experience lingering cold weather even into March. This could reflect colder-than-average weather patterns or specific cold fronts during that month.
 
-Despite these adjustments, the results still show inconsistencies, such as months with more than 31 cold days. These discrepancies may arise from duplicates or irregularities in the weather dataset, such as multiple recordings for the same hour or incomplete data cleaning. Without deeper investigation or cleaning of the dataset, it is impossible to guarantee correct results.
+In contrast, the results for the summer months show no cold days, reinforcing the idea that New York experiences reliably warm summers. This is consistent with my general understanding of its climate.
 
-Final Note: The current count of cold days per month should be interpreted with caution. Additional clarification from the data provider or further exploration of the dataset might be necessary to resolve these issues.
+Overall, the results match expectations for New York’s climate: cold, steady winters and predictably warm summers. The only notable exception is March, which appears unusually cold. These variations highlight how regional weather patterns can influence a city's climate dynamics, even within familiar seasonal trends.
 
-## Task 2
-
+# Task 2
 ```{r echo=FALSE}
 
 ## -> -> EMPR_05_Data_Transformation_I_AS2024.pdf / pages 3 (filter()) and 17 (across())
@@ -90,12 +81,11 @@ missing_dep_time <- flights %>%
 print(missing_dep_time)
 
 ```
-
 ### Explanation
 
 Rows with missing dep_time likely represent flights that were canceled. These rows have missing values for other related columns, such as arr_time, air_time, and sched_dep_time, because a canceled flight does not have actual departure or arrival times recorded. Additionally, the absence of sched_dep_time might indicate flights removed from the schedule altogether due to external factors such as weather conditions, operational issues, or low demand.
 
-## Task 3 - a
+# Task 3a
 
 ```{r echo=FALSE}
 
@@ -116,11 +106,9 @@ ggplot(weather_selected, aes(x = temp)) +
     title = "Temperature Distribution by Month"                   # Title
   ) +
   theme_minimal()                                                  # Apply a clean theme
-
-
 ```
 
-## Task 3 - b
+# Task 3b
 
 ```{r echo=FALSE}
 
@@ -135,10 +123,9 @@ ggplot(weather_selected, aes(x = temp, y = factor(month, labels = month.name))) 
     title = "Temperature Distribution by Month"             # Title
   ) +
   theme_minimal()                                            # Clean theme for better readability
-
 ```
 
-## Task 3 - c
+# Task 3c
 
 ```{r echo=FALSE}
 
@@ -168,48 +155,46 @@ ggplot(aggregated_data, aes(x = month, y = mean_temp)) +
   ) +
   scale_x_continuous(breaks = 1:12) +               # Ensure months are labeled as numbers
   theme_minimal()                                   # Clean theme
-
-
-
 ```
 
-## Task 4
+# Task 4
 
-### Data Cleaning and Inspection for Homework
-
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE }
+## -> EMPR_06_Import_Export_AS2024.pdf / page 1: read_excel for importing Excel data
+## -> EMPR_06_Import_Export_AS2024.pdf / page 10 (bottom): lubridate for working with date formats
+## -> EMPR_05_Data_Transformation_I_AS2024.pdf / slides 14-15: mutate for transforming data types
 
 # Import the dataset
 Data_HW2 <- read_excel("Data_HW2.xlsx", sheet = "A very small sample")
+```
 
-# date of birth
+## date of birth
 
-# Problem:
-# The 'date of birth' column contains dates in different formats.
-# Some are in "YYYY-MM-DD" format, while others use "DD.MM.YYYY".
-# This inconsistency needs to be addressed to ensure uniformity in the dataset.
+Problem: The 'date of birth' column contains dates in different formats. Some are in "YYYY-MM-DD" format, while others use "DD.MM.YYYY". This inconsistency needs to be addressed to ensure uniformity in the dataset.
 
-# Solution:
-# Convert all date formats to a standard "YYYY-MM-DD" format using lubridate.
+Solution: Convert all date formats to a standard "YYYY-MM-DD" format using lubridate.
 
+```{r echo=FALSE, warning=FALSE }
 Data_HW2_cleaned <- Data_HW2 %>%
   mutate(
     `date of birth` = case_when(
-      grepl("^\\d{2}\\.\\d{2}\\.\\d{4}$", `date of birth`) ~ dmy(`date of birth`), # Handle DD.MM.YYYY
-      grepl("^\\d{4}-\\d{2}-\\d{2}$", `date of birth`) ~ ymd(`date of birth`), # Handle YYYY-MM-DD
-      grepl("^\\d+$", `date of birth`) ~ as.Date(as.numeric(`date of birth`), origin = "1899-12-30"), # Convert Excel date
-      TRUE ~ NA_Date_ # All other cases to NA
+      grepl("^\\d{2}\\.\\d{2}\\.\\d{4}$", `date of birth`) ~ as.Date(`date of birth`, format = "%d.%m.%Y"),  # DD.MM.YYYY
+      grepl("^\\d{4}-\\d{2}-\\d{2}$", `date of birth`) ~ as.Date(`date of birth`),  # YYYY-MM-DD
+      `date of birth` == "NA" ~ NA_Date_,  #
+      grepl("^\\d+$", `date of birth`) ~ as.Date(as.numeric(`date of birth`), origin = "1899-12-30"),  
+      TRUE ~ NA_Date_  # All other cases = na
     )
   )
+```
 
-# Height
+## Height
 
-# Problem:
-# The 'height' column has inconsistent units. Some values are in 'cm', while others are in 'm' (e.g., '1,82m').
-# This inconsistency makes it difficult to analyze the data.
+Problem: The 'height' column has inconsistent units. Some values are in 'cm', while others are in 'm' (example., '1,82m'). This inconsistency makes it difficult to analyze the data.
 
-# Solution:
-# Convert all heights to centimeters. For values in meters ('m'), multiply by 100 after converting them to numeric.
+Solution: Convert all heights to centimeters. For values in meters ('m'), multiply by 100 after converting them to numeric.
+
+```{r echo=FALSE, warning=FALSE }
+
 Data_HW2_cleaned <- Data_HW2_cleaned %>%
   mutate(
     height = case_when(
@@ -218,109 +203,112 @@ Data_HW2_cleaned <- Data_HW2_cleaned %>%
       TRUE ~ NA_real_ # Mark invalid or missing values as NA
     )
   )
+```
 
-# Feet
+## Feet
 
-# Problem:
-# The 'foot' column contains unusually large values, likely due to a mix-up with shoe sizes.
-# Foot lengths above 40 cm are unrealistic and should be treated as invalid.
+Problem: The 'foot' column contains unusually large values, likely due to a mix-up with shoe sizes. Foot lengths above 40 cm are in our opinion unrealistic and should be treated as invalid.
 
-# Solution:
-# Use mutate() to replace values greater than 40 with NA, indicating invalid entries.
+Solution: Use mutate() to replace values greater than 40 with NA, indicating invalid entries.
+
+```{r echo=FALSE, warning=FALSE }
 
 Data_HW2_cleaned <- Data_HW2_cleaned %>%
   mutate(
     foot = ifelse(foot > 40, NA_real_, foot) # Replace values > 40 with NA
   )
+```
 
-# Hair
+## Hair
 
-# Problem:
-# The 'hair' column contains the value "Glatze"
-# This is inconsistent with numerical hair lengths. It should be replaced with 0.
+Problem: The 'hair' column contains the value "Glatze" This is inconsistent with numerical hair lengths. It should be replaced with 0.
 
-# Solution:
-# Use mutate() to replace "Glatze" with 0 and ensure all values are numeric.
+Solution: Use mutate() to replace "Glatze" with 0 and ensure all values are numeric.
+
+```{r echo=FALSE, warning=FALSE }
 
 Data_HW2_cleaned <- Data_HW2_cleaned %>%
   mutate(
     hair = ifelse(hair == "Glatze", 0, as.numeric(hair)) # Replace "Glatze" with 0 and convert to numeric
   )
 
-# Check the cleaned 'hair' column
-view(Data_HW2_cleaned$hair)
-
-
-#  eye colour
-
-# Problem Description:
-# The 'eye colour' column contains inconsistent values due to:
-# - Mixed languages (German and English)
-# - Inconsistent capitalization
-# - Multiple colors separated by spaces or slashes
-
-# Solution:
-# Use mutate() to standardize all values to lowercase English and unify multiple colors with a hyphen.
-
-Data_HW2_cleaned <- Data_HW2_cleaned %>%
-  mutate(
-    `eye colour` = str_to_lower(`eye colour`), # Convert to lowercase
-    `eye colour` = str_replace_all(`eye colour`, "blau", "blue"), # Translate to English
-    `eye colour` = str_replace_all(`eye colour`, "grau", "grey"),
-    `eye colour` = str_replace_all(`eye colour`, "grün", "green"),
-    `eye colour` = str_replace_all(`eye colour`, "braun", "brown"),
-    `eye colour` = str_replace_all(`eye colour`, "schwarz", "black"),
-    `eye colour` = str_replace_all(`eye colour`, "/", "-"), # Replace slashes with hyphen
-    `eye colour` = str_squish(`eye colour`), # Remove extra spaces
-    `eye colour` = str_replace_all(`eye colour`, "\\s+", "-"), # Replace spaces with hyphen
-    `eye colour` = str_replace_all(`eye colour`, "-{2,}", "-") # Replace multiple hyphens with a single hyphen
-  )
-
-# Cash
-# Problem:
-# The 'cash (CHF)' column has missing values (interpreted as 0) and unrealistically high values like 4000.
-# These high values likely refer to salary and should be removed or capped.
-
-# Solution:
-# - Replace missing values with 0.
-# - Cap all values greater than 400 to 400 (reasonable maximum for cash on hand).
-
-Data_HW2_cleaned <- Data_HW2_cleaned %>%
-  mutate(
-    `cash (CHF)` = ifelse(is.na(`cash (CHF)`), 0, `cash (CHF)`), # Replace missing values with 0
-    `cash (CHF)` = ifelse(`cash (CHF)` > 400, 400, `cash (CHF)`) # Cap values above 400
-  )
-
-
-# Save cleaned data
-saveRDS(Data_HW2_cleaned, file = "cleaned_data.rds")
-
-# Verify cleaned data
-cleaned_data <- readRDS("cleaned_data.rds")
-view(cleaned_data)
-
 
 ```
 
-## Task 5 - A
+## eye colour
+
+Problem: The 'eye colour' column contains inconsistent values due to: - Mixed languages (German and English) - Inconsistent capitalization - Multiple colors separated by spaces or slashes
+
+Solution: Use mutate() to standardize all values to lowercase English and unify multiple colors with a hyphen.
+
+```{r echo=FALSE, warning=FALSE }
+# Clean column names (replace spaces with dots)
+colnames(Data_HW2_cleaned) <- make.names(colnames(Data_HW2_cleaned))
+
+# Transform the data
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    # Convert all values in the eye.colour column to lowercase
+    eye.colour = str_to_lower(eye.colour),
+    
+    # Translate German colors to English
+    eye.colour = str_replace_all(eye.colour, c(
+      "blau" = "blue",
+      "grau" = "grey",
+      "grün" = "green",
+      "braun" = "brown",
+      "schwarz" = "black"
+    )),
+    
+    # Handle composite colors
+    eye.colour = str_replace_all(eye.colour, c(
+      "grün-braun" = "green-brown",
+      "grün-grey" = "green-grey",
+      "blue-grey" = "blue-grey",
+      "green-grey" = "green-grey"
+    )),
+    
+    # Clean special characters and spaces
+    eye.colour = str_replace_all(eye.colour, "\\/", "-"),  # Replace slashes with hyphens
+    eye.colour = str_squish(eye.colour),                  # Remove extra spaces
+    eye.colour = str_replace_all(eye.colour, "\\s+", "-"), # Replace spaces with hyphens
+    eye.colour = str_replace_all(eye.colour, "-{2,}", "-") # Replace multiple hyphens with one
+  )
+
+```
+## Cash
+
+Problem: The 'cash (CHF)' column has missing values (interpreted as 0) and unrealistically high values like 4000. These high values likely refer to salary and should be removed or capped.
+
+Solution: - Replace missing values with 0. - Cap all values greater than 400 to 400 (reasonable maximum for cash on hand).
+
+```{r echo=FALSE, warning=FALSE }
+# Clean and transform the data
+Data_HW2_cleaned <- Data_HW2_cleaned %>%
+  mutate(
+    `cash..CHF.` = ifelse(is.na(`cash..CHF.`), 0, `cash..CHF.`), # Replace missing values with 0
+    `cash..CHF.` = ifelse(`cash..CHF.` > 400, 400, `cash..CHF.`) # Cap values above 400
+  )
+
+# Save the cleaned data
+saveRDS(Data_HW2_cleaned, file = "cleaned_data.rds")
+
+# Load and verify the cleaned data
+cleaned_data <- readRDS("cleaned_data.rds")
+
+View(cleaned_data)
+```
+
+# Task 5a
+
+The dataset is not tidy because: Variables are stored in column names: Each sample (1, 2, 3, 4) has its x and y values in separate columns like x1, y1, x2, etc. Instead, each sample should #be identified as a separate observation. Data is not normalized: Instead of having one column for x, one for y, and another for the sample, the dataset has redundant columns for each sample. Structure is inefficient: This wide format makes it harder to analyze the data as a whole since the relationships between x and y for all samples are split #across multiple columns. Why tidying is important: To analyze the data properly, we need to convert it into a tidy format where:
+
+Each variable has its own column (x, y, sample). Each observation is in its own row.
 
 ```{r echo=FALSE}
-
-
-#The dataset is not tidy because:
-#
-#Variables are stored in column names: Each sample (1, 2, 3, 4) has its x and y values in separate columns like x1, y1, x2, etc. Instead, each sample should #be identified as a separate observation.
-#Data is not normalized: Instead of having one column for x, one for y, and another for the sample, the dataset has redundant columns for each sample.
-#Structure is inefficient: This wide format makes it harder to analyze the data as a whole since the relationships between x and y for all samples are split #across multiple columns.
-#Why tidying is important:
-#To analyze the data properly, we need to convert it into a tidy format where:
-
-#Each variable has its own column (x, y, sample).
-#Each observation is in its own row.
-
-
-library(tidyr)
-library(dplyr)
+## -> EMPR_06_Import_Export_AS2024.pdf / page 14: write_rds for loading saved data
+## -> EMPR_07_Data_Tidying_AS2024.pdf / slide 4: pivot_longer for tidying data and using regular expressions
+## -> EMPR_05_Data_Transformation_I_AS2024.pdf / slides 14-15: mutate for transforming data types
 
 
 
@@ -334,15 +322,15 @@ tidy_anscombe <- anscombe %>%
   mutate(sample = as.integer(sample)) # Convert sample to numeric
 
 # Save the tidy dataset for future use
-saveRDS(tidy_anscombe, "tidy_anscombe.rds")
+write_rds(tidy_anscombe, "tidy_anscombe.rds")
 
 ```
 
-## Task 5 - B
+# Task 5b
 
 ```{r echo=FALSE}
-
-
+## -> EMPR_06_Import_Export_AS2024.pdf / page 14: ReadRDS for loading saved data
+## -> EMPR_03_Visualization1_AS2024.pdf / page 12: ggplot2 example with scatterplot and trend line, using geom_point and geom_smooth
 
 # Load the tidy data
 tidy_anscombe <- readRDS("tidy_anscombe.rds")
@@ -359,80 +347,75 @@ ggplot(tidy_anscombe, aes(x = x, y = y, color = as.factor(sample), shape = as.fa
     color = "Sample",
     shape = "Sample"
   ) +
-  theme_minimal() # Clean theme
+  theme_minimal()
 
 ```
 
-## Task 5 - C
+# Task 5c
 
 ```{r echo=FALSE}
 
-# Lade notwendige Pakete
-library(dplyr)
+## -> EMPR_06_Import_Export_AS2024.pdf / page 14: readRDS for loading saved data
+## -> EMPR_05_Data_Transformation_I_AS2024.pdf / page 20: group_by and summarize for data aggregation
 
-# Lade das tidy Dataset
+
+# Load the tidy dataset
 tidy_anscombe <- readRDS("tidy_anscombe.rds") 
 
-# Berechne die Statistiken in einer einzigen Pipeline
 tidy_anscombe %>%
-  group_by(sample) %>% # Gruppiere nach Sample
+  group_by(sample) %>% # Group  Sample
   summarize(
-    mean_x = mean(x, na.rm = TRUE), # Mittelwert von x
-    mean_y = mean(y, na.rm = TRUE), # Mittelwert von y
-    sd_x = sd(x, na.rm = TRUE), # Standardabweichung von x
-    sd_y = sd(y, na.rm = TRUE), # Standardabweichung von y
-    corr_xy = cor(x, y, use = "complete.obs") # Korrelation zwischen x und y
+    mean_x = mean(x, na.rm = TRUE), 
+    mean_y = mean(y, na.rm = TRUE), 
+    sd_x = sd(x, na.rm = TRUE), 
+    sd_y = sd(y, na.rm = TRUE), 
+    corr_xy = cor(x, y, use = "complete.obs") # corr between x and y
   ) %>%
   kable( # Formatiere die Tabelle
-    col.names = c("Sample", "Mean X", "Mean Y", "SD X", "SD Y", "Correlation XY"),
+    col.names = c("Sample", "mean_x", "mean_y", "sd_X", "sd_Y", "corr_xy"),
     digits = 3, # Zeige 3 Nachkommastellen
     align = "c"
   ) %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
 ```
 
-```{r echo=FALSE}
-library(dplyr)
-
-# Load the tidy dataset
-tidy_anscombe <- readRDS("tidy_anscombe.rds") 
-
-# Calculate the statistics in a single pipeline
-tidy_anscombe %>%
-  group_by(sample) %>% # Group data by the 'sample' variable
-  summarize(
-    mean_x = mean(x, na.rm = TRUE), # Calculate the mean of x
-    mean_y = mean(y, na.rm = TRUE), # Calculate the mean of y
-    sd_x = sd(x, na.rm = TRUE), # Calculate the standard deviation of x
-    sd_y = sd(y, na.rm = TRUE), # Calculate the standard deviation of y
-    corr_xy = cor(x, y, use = "complete.obs") # Calculate the correlation between x and y
-  ) %>%
-  kable( # Create a formatted table
-    col.names = c("Sample", "Mean X", "Mean Y", "SD X", "SD Y", "Correlation XY"), # Set column names
-    digits = 3, # Show 3 decimal places
-    align = "c" # Center-align the table columns
-  ) %>%
-  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover")) # Add styling to the table
-    
-```
+# Task 5d
 
 ```{r echo=FALSE}
+
+## -> EMPR_06_Import_Export_AS2024.pdf / page 14: readRDS for loading saved data
+## -> EMPR_03_Visualization1_AS2024.pdf / page 12: ggplot2 example with scatterplot and trend line, using geom_point and geom_smooth
+## -> EMPR_03_Visualization1_AS2024.pdf / slide 10: facet_grid for creating subplots
+
+
 # Load the tidy dataset
 readRDS("tidy_anscombe.rds") %>%
-  ggplot(aes(x = x, y = y)) +
-  geom_point(size = 3, color = "blue") + # Add scatterplot points
-  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "red") + # Add lines of best fit
+  ggplot(aes(x = x, y = y, color = as.factor(sample), shape = as.factor(sample))) +
+  geom_point(size = 3) + # Add scatterplot points
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") + # Add lines of best fit
   facet_grid(~ sample) + # Create one plot per sample
+  scale_color_manual(values = c("red", "blue", "green", "purple")) + # Assign colors to each sample
+  scale_shape_manual(values = c(12, 10, 9, 7)) + # Assign shapes to each sample
   labs(
     title = "Scatterplots of Anscombe's Data with Lines of Best Fit",
     subtitle = "Each sample shows a different pattern despite having similar summary statistics",
     x = "X Values",
-    y = "Y Values"
+    y = "Y Values",
+    color = "Sample",
+    shape = "Sample"
   ) +
-  theme_minimal() # Use a clean theme for better visualization
+  theme_minimal() + # Use a clean theme for better visualization
+  theme(
+    legend.position = "bottom" # Move legend to the bottom for better space usage
+  )
 
 ```
 
-## **Workload**
+## **Workload Samuel**
 
 We sat down at the beginning and divided up the tasks. The first thing we did was set up a Git repository so that we could easily collaborate and continuously track each other’s progress. We organized the tasks so that Samuel took on tasks 1, 2 and 3, while Fabian handled tasks 4 and 5. This clear division helped us focus and avoid overlapping efforts. After completing our initial assignments, we held a short meeting to discuss the status and share updates on our progress. This check-in proved beneficial, as it highlighted some areas that needed further refinement. Although a few items were still incomplete, we felt that we were moving in the right direction and understood what remained to be done. To ensure the quality of each other’s work, we decided that Fabian would review and make corrections to Samuel's tasks, and vice versa. This mutual review process not only helped catch errors but also facilitated a better understanding of each other's approach. By the end of the session, we felt more confident about our progress and looked forward to wrapping up the remaining tasks.
+
+## **Workload Fabian**
+
+I began by taking on tasks 4 and 5, focusing on completing them with care. After finishing my assignments, I did a final review of everything to ensure that everything was working as expected. I saw that we had a mistake in number 1, i think we had 35 cold days in january, which is of course rather difficult in a month that only has 31 days. But I think I was able to fix it now, but that also shows how important it is to check the whole thing again
+. Once I was satisfied with the quality of the work, I submitted everything. By the end, I felt confident that the tasks were well-executed and met the necessary standards.
